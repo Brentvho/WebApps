@@ -104,6 +104,15 @@ router.put('/posts/:post/downvote', auth, function(req, res, next) {
     });
 });
 
+router.delete('/posts/:post', auth, function(req, res, next) {
+    var post = req.post;
+    Post.remove( post, function(err) {
+        if(err){
+            return next(err);
+        }
+    });
+});
+
 // ----- COMMENTS
 
 router.post('/posts/:post/comments', auth, function(req, res, next) {
@@ -130,6 +139,25 @@ router.put('/posts/:post/comments/:comment/upvote', auth, function(req, res, nex
         }
 
         res.json(comment);
+    });
+});
+
+router.put('/posts/:post/comments/:comment/downvote', auth, function(req, res, next) {
+    req.comment.downvote(function(err, comment){
+        if (err) {
+            return next(err);
+        }
+
+        res.json(comment);
+    });
+});
+
+router.delete('/posts/:post/comments/:comment', auth, function(req, res, next) {
+    var comment = req.comment;
+    Comment.remove( comment, function(err) {
+        if(err){
+            return next(err);
+        }
     });
 });
 

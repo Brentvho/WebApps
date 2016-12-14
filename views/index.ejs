@@ -3,6 +3,7 @@
 <head>
     <title>Flapper News</title>
     <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.3.2/angular-ui-router.js"></script>
     <script src="/javascripts/angularApp.js"></script>
@@ -11,58 +12,68 @@
     } </style>
 </head>
 <body ng-app="flapperNews">
+
 <!-- Nav bar -->
-<nav class="navbar navbar-default pull-right" ng-controller="NavCtrl">
-    <ul class="nav navbar-nav">
-        <li ng-show="isLoggedIn()"><a>{{ currentUser() }}</a></li>
-        <li ng-show="isLoggedIn()"><a href="" ng-click="logOut()">Log Out</a></li>
+<nav class="navbar navbar-default col-md-8 col-md-offset-2" ng-controller="NavCtrl">
+    <ul class="nav navbar-nav navbar-right">
+        <li ng-show="isLoggedIn()"><a href="" ng-click="logout()">{{ currentUser() }}: Log Out</a></li>
         <li ng-hide="isLoggedIn()"><a href="/#/login">Log In</a></li>
         <li ng-hide="isLoggedIn()"><a href="/#/register">Register</a></li>
     </ul>
 </nav>
+
+
+
 <!-- Main page -->
 <div class="row">
     <div class="col-md-6 col-md-offset-3 col-xs-10 col-xs-offset-1">
         <!-- Posts template -->
+        <div class="page-header">
+            <h1>Flapper News</h1>
+        </div>
         <ui-view></ui-view>
 
     </div>
 </div>
 
-<!-- TEMPLATES -->
+<!------------- TEMPLATES ------------->
 <!-- POSTS -->
 <script type="text/ng-template" id="/home.html">
-    <div class="page-header">
-        <h1>Flapper News</h1>
-    </div>
 
     <!-- Displaying post lists -->
-    <div ng-repeat="post in posts | orderBy:'-upvotes'" class="row">
-        <span style="font-size:20px; " class="col-md-9 col-md-offset-1 col-xs-12">
-            <a ng-show="post.link" href="{{post.link}}">
-                {{post.title}}
-            </a>
-            <span ng-hide="post.link">
-                {{post.title}}
+    <div ng-repeat="post in filteredPosts | startFrom:currentPage*pageSize | limitTo:pageSize | orderBy:'-upvotes'" class="row">
+        <div class="row">
+            <span class="col-md-8 col-xs-12" >
+                <a ng-show="post.link" href="{{post.link}}">
+                    {{post.title}}
+                </a>
+                <h4 ng-hide="post.link" >
+                    {{post.title}}
+                </h4>
+                <h6 ng-show="post.author">
+                    posted by <a>{{post.author}}</a> | {{post.date | date:'short'}}
+                </h6>
             </span>
-            <span ng-show="post.author">
-                posted by <a>{{post.author}}</a> |
-            </span>
-        </span>
-        <span style="font-size:15px;" class="col-md-2 col-xs-12">
-            <span>
+            <span class="col-md-4 col-xs-12">
                 {{post.upvotes}}
+                <button class="glyphicon glyphicon-thumbs-up" ng-click="upvote(post)"></button>
+                <button class="glyphicon glyphicon-thumbs-down" ng-click="downvote(post)"></button>
+                <button class="glyphicon glyphicon-remove" type="button" ng-confirm-message="Do you want to remove this post?" ng-confirm-click="removePost(post)"></button>
             </span>
-            <button class="glyphicon glyphicon-thumbs-up" ng-click="upvote(post)"></button>
-            <button class="glyphicon glyphicon-thumbs-down" ng-click="downvote(post)"></button>
+            <span>
 
-        </span>
-        <span>
-          <a href="#/posts/{{post._id}}">Comments</a>
-        </span>
-
+                <a href="#/posts/{{post._id}}">Comments</a>
+            </span>
+            <hr>
+        </div>
     </div>
-
+    <button ng-hide="currentPage == 0" ng-click="currentPage=currentPage-1">
+        Previous
+    </button>
+    Page {{currentPage+1}} of {{numberOfPages()}}
+    <button ng-hide="currentPage >= filteredPosts.length/pageSize - 1" ng-click="currentPage=currentPage+1">
+        Next
+    </button>
     <!-- Button form for adding Posts -->
     <form ng-submit="addPost()" ng-show="isLoggedIn()"
           style="margin-top:30px;">
@@ -96,12 +107,23 @@
     </div>
 
     <div ng-repeat="comment in post.comments | orderBy:'-upvotes'">
-        <button class="glyphicon glyphicon-thumbs-up" ng-click="upvote(comment)"></button>
-        <button class="glyphicon glyphicon-thumbs-downvote" ng-click="downvote(comment)"></button>
-            {{comment.upvotes}} - by {{comment.author}}
-        <span style="font-size:20px; margin-left:10px;">
-            {{comment.body}}
-        </span>
+        <div class="row">
+            <span class="col-md-8">
+                <h5>
+                    {{comment.body}}
+                </h5>
+                <h6>
+                  - by {{comment.author}} | {{comment.date | date:'short'}}
+                </h6>
+            </span>
+                <span class="col-md-4">
+                {{comment.upvotes}}
+                <button class="glyphicon glyphicon-thumbs-up" ng-click="upvote(comment)"></button>
+                <button class="glyphicon glyphicon-thumbs-down" ng-click="downvote(comment)"></button>
+                <button class="glyphicon glyphicon-remove" type="button" ng-confirm-message="Do you want to remove this post?" ng-confirm-click="removeComment(comment)"></button>
+            </span>
+        </div>
+
     </div>
 
     <!-- Form for adding comments -->
@@ -122,45 +144,37 @@
 
 <!-- REGISTER -->
 <script type="text/ng-template" id="/register.html">
-<div class="page-header">
-    <h1>Flapper News</h1>
-</div>
-
-<div ng-show="error" class="alert alert-danger row">
-    <span>{{ error.message }}</span>
-</div>
-
-<form ng-submit="register()"
-      style="margin-top:30px;">
-    <h3>Register</h3>
-
-    <div class="form-group">
-        <input type="text"
-               class="form-control"
-               placeholder="Username"
-               ng-model="user.username"></input>
-    </div>
-    <div class="form-group">
-        <input type="password"
-               class="form-control"
-               placeholder="Password"
-               ng-model="user.password"></input>
-    </div>
-    <button type="submit" class="btn btn-primary">Register</button>
-</form>
-</script>
-
-<!--LOGIN -->
-<script type="text/ng-template" id="/login.html">
-    <div class="page-header">
-        <h1>Flapper News</h1>
-    </div>
-
     <div ng-show="error" class="alert alert-danger row">
         <span>{{ error.message }}</span>
     </div>
 
-    <form ng-submit="logIn()"
+    <form ng-submit="register()"
+          style="margin-top:30px;">
+        <h3>Register</h3>
+
+        <div class="form-group">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Username"
+                   ng-model="user.username"></input>
+        </div>
+        <div class="form-group">
+            <input type="password"
+                   class="form-control"
+                   placeholder="Password"
+                   ng-model="user.password"></input>
+        </div>
+        <button type="submit" class="btn btn-primary">Register</button>
+    </form>
+</script>
+
+<!--LOGIN -->
+<script type="text/ng-template" id="/login.html">
+    <div ng-show="error" class="alert alert-danger row">
+        <span>{{ error.message }}</span>
+    </div>
+
+    <form ng-submit="login()"
           style="margin-top:30px;">
         <h3>Log In</h3>
 

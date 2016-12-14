@@ -8,7 +8,6 @@ var app = angular.module('flapperNews', [
 
 
 //service
-
 app.factory('auth', ['$http', '$window', function($http, $window){
     var auth = {};
     var tokenStorage = 'web-apps-token';
@@ -61,7 +60,8 @@ app.factory('auth', ['$http', '$window', function($http, $window){
 
 app.factory('posts', ['$http', 'auth', function ($http, auth) {
     var o = {
-      posts: []
+      posts: [],
+        filteredPosts: []
     };
 
     o.getAll = function() {
@@ -81,6 +81,13 @@ app.factory('posts', ['$http', 'auth', function ($http, auth) {
             headers: {Authorization: 'Bearer ' + auth.getToken()}
         }).success(function(data) {
            o.posts.push(data);
+           o.filteredPosts.push(data);
+        });
+    };
+
+    o.removePost = function (post) {
+        return $http.delete('/posts/' + post._id, {
+            headers: {Authorization: 'Bearer ' + auth.getToken()}
         });
     };
 
@@ -100,9 +107,14 @@ app.factory('posts', ['$http', 'auth', function ($http, auth) {
         });
     };
 
-
     o.addComment = function (id, comment) {
         return $http.post('/posts/' + id + '/comments', comment, {
+            headers: {Authorization: 'Bearer ' + auth.getToken()}
+        });
+    };
+
+    o.removeComment = function (id, comment){
+        return $http.delete('/posts/' + id + '/comments/' + comment._id, {
             headers: {Authorization: 'Bearer ' + auth.getToken()}
         });
     };
@@ -123,24 +135,30 @@ app.factory('posts', ['$http', 'auth', function ($http, auth) {
         })
     };
 
-
-
     return o;
 }]);
 
 app.controller  ('MainCtrl', [
     '$scope', 'posts', 'auth', function($scope, posts, auth){
         $scope.posts = posts.posts;
+        $scope.filteredPosts = posts.filteredPosts;
+        $scope.currentPage = 0;
+        $scope.pageSize = 10;
+        $scope.loggedInUser = auth.currentUser();
         $scope.isLoggedIn = auth.isLoggedIn;
         $scope.title = '';
-        /*
-        $scope.posts = [
-            {title: 'post 1', upvotes: 5},
-            {title: 'post 2', upvotes: 2},
-            {title: 'post 3', upvotes: 15},
-            {title: 'post 4', upvotes: 9},
-            {title: 'post 5', upvotes: 4}
-        ];*/
+
+        $scope.upvote = function(post){
+            posts.upvote(post);
+        };
+
+        $scope.downvote = function (post) {
+            posts.downvote(post);
+        };
+
+        $scope.numberOfPages=  function () {
+            return Math.ceil($scope.posts.length/$scope.pageSize);
+        };
 
         $scope.addPost = function(){
             //prevent empty posts
@@ -156,19 +174,33 @@ app.controller  ('MainCtrl', [
             $scope.link = '';
         };
 
-        $scope.upvote = function(post){
-            posts.upvote(post);
+        $scope.removePost = function (post) {
+            if($scope.loggedInUser == post.author){
+                posts.removePost(post);
+
+                var index = $scope.filteredPosts.indexOf(post);
+                if(index > -1){
+                    $scope.filteredPosts.splice(index, 1);
+                }
+            }
         };
 
-        $scope.downvote = function (post) {
-            posts.downvote(post);
-        };
-
+        for(var i = 0; i < $scope.posts.length; i++){
+            $scope.filteredPosts.push($scope.posts[i]);
+        }
     }
 ]);
 
+app.filter('startFrom', function() {
+    return function(input, start) {
+        start = +start;
+        return input.slice(start);
+    }
+});
+
 app.controller ('PostsCtrl', [
         '$scope', 'posts', 'post', 'auth', function ($scope, posts, post, auth) {
+        $scope.loggedInUser = auth.currentUser();
         $scope.post = post;
         $scope.isLoggedIn = auth.isLoggedIn;
 
@@ -186,8 +218,19 @@ app.controller ('PostsCtrl', [
             $scope.body = '';
         };
 
+        $scope.removeComment = function (comment) {
+            if($scope.loggedInUser == comment.author){
+                posts.removeComment(post._id, comment);
 
-        $scope.upvote = function(comment){
+                var index = $scope.post.comments.indexOf(comment);
+                console.log("Removing comment, index: " + index);
+                if(index > -1){
+                    $scope.post.comments.splice(index, 1);
+                }
+            }
+        };
+
+        $scope.upvote = function (comment) {
             posts.upvoteComment(post, comment);
         };
 
@@ -206,6 +249,8 @@ app.controller('AuthCtrl', [
                 $scope.error = error;
             }).then(function () {
                 $state.go('home');
+                $scope.user = {};
+
             })
         };
 
@@ -214,6 +259,8 @@ app.controller('AuthCtrl', [
                 $scope.error = error;
             }).then(function () {
                 $state.go('home');
+                $scope.user = {};
+
             });
         };
     }
@@ -223,8 +270,13 @@ app.controller('NavCtrl', [
         '$scope', 'auth', function($scope, auth){
         $scope.isLoggedIn = auth.isLoggedIn;
         $scope.currentUser = auth.currentUser;
-        $scope.logout = auth.logout;
-
+        $scope.logout = function () {
+            auth.logout().error(function (error) {
+                $scope.error = error;
+            }).then(function () {
+                $state.go('home');
+            })
+        };
     }
 ]);
 
@@ -280,3 +332,17 @@ app.config([ '$stateProvider', '$urlRouterProvider', function ($stateProvider, $
         $urlRouterProvider.otherwise('home');
     }
 ]);
+
+app.directive('ngConfirmClick', [function() {
+    return {
+        restrict: 'A',
+        link: function(scope, element, attrs) {
+            element.bind('click', function() {
+                var message = attrs.ngConfirmMessage;
+                if (message && confirm(message)) {
+                    scope.$apply(attrs.ngConfirmClick);
+                }
+            });
+        }
+    }
+}]);
