@@ -28,9 +28,6 @@
 <div class="row">
     <div class="col-md-6 col-md-offset-3 col-xs-10 col-xs-offset-1">
         <!-- Posts template -->
-        <div class="page-header">
-            <h1>Flapper News</h1>
-        </div>
         <ui-view></ui-view>
 
     </div>
@@ -39,6 +36,10 @@
 <!------------- TEMPLATES ------------->
 <!-- POSTS -->
 <script type="text/ng-template" id="/home.html">
+
+    <div class="page-header">
+        <h1>Flapper News</h1>
+    </div>
 
     <div ng-show="error" class="alert alert-danger row">
         <span>{{ error.message }}</span>
@@ -120,7 +121,7 @@
                     {{comment.body}}
                 </h5>
                 <h6>
-                  - by {{comment.author}} | {{comment.date | date:'short'}}
+                    - by <a>{{comment.author}}</a> | {{comment.date | date:'short'}}
                 </h6>
             </span>
             <span class="col-md-4">
@@ -151,6 +152,10 @@
 
 <!-- REGISTER -->
 <script type="text/ng-template" id="/register.html">
+    <div class="page-header">
+        <h1>Flapper News</h1>
+    </div>
+
     <div ng-show="error" class="alert alert-danger row">
         <span>{{ error.message }}</span>
     </div>
@@ -177,6 +182,10 @@
 
 <!--LOGIN -->
 <script type="text/ng-template" id="/login.html">
+    <div class="page-header">
+        <h1>Flapper News</h1>
+    </div>
+
     <div ng-show="error" class="alert alert-danger row">
         <span>{{ error.message }}</span>
     </div>

@@ -212,7 +212,7 @@ app.controller ('PostsCtrl', [
             }
             posts.addComment(post._id, {
                 body: $scope.body,
-                author: 'user'
+                author: $scope.loggedInUser
             }).success(function(comment){
                 $scope.post.comments.push(comment);
             });
