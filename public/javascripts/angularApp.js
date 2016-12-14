@@ -182,6 +182,8 @@ app.controller  ('MainCtrl', [
                 if(index > -1){
                     $scope.filteredPosts.splice(index, 1);
                 }
+            }else{
+                $scope.error = "Can't delete posts from other people!";
             }
         };
 
@@ -227,6 +229,9 @@ app.controller ('PostsCtrl', [
                 if(index > -1){
                     $scope.post.comments.splice(index, 1);
                 }
+            }else{
+                $scope.error ="";
+                $scope.error.message = "Can't delete comments from other people!";
             }
         };
 

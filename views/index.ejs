@@ -40,6 +40,9 @@
 <!-- POSTS -->
 <script type="text/ng-template" id="/home.html">
 
+    <div ng-show="error" class="alert alert-danger row">
+        <span>{{ error.message }}</span>
+    </div>
     <!-- Displaying post lists -->
     <div ng-repeat="post in filteredPosts | startFrom:currentPage*pageSize | limitTo:pageSize | orderBy:'-upvotes'" class="row">
         <div class="row">
@@ -106,6 +109,10 @@
         </h3>
     </div>
 
+    <div ng-show="error" class="alert alert-danger row">
+        <span>{{ error.message }}</span>
+    </div>
+
     <div ng-repeat="comment in post.comments | orderBy:'-upvotes'">
         <div class="row">
             <span class="col-md-8">
@@ -116,11 +123,11 @@
                   - by {{comment.author}} | {{comment.date | date:'short'}}
                 </h6>
             </span>
-                <span class="col-md-4">
+            <span class="col-md-4">
                 {{comment.upvotes}}
                 <button class="glyphicon glyphicon-thumbs-up" ng-click="upvote(comment)"></button>
                 <button class="glyphicon glyphicon-thumbs-down" ng-click="downvote(comment)"></button>
-                <button class="glyphicon glyphicon-remove" type="button" ng-confirm-message="Do you want to remove this post?" ng-confirm-click="removeComment(comment)"></button>
+                <button class="glyphicon glyphicon-remove" type="button" ng-confirm-message="Do you want to remove this comment?" ng-confirm-click="removeComment(comment)"></button>
             </span>
         </div>
 
